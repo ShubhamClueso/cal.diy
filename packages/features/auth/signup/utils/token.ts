@@ -3,6 +3,35 @@ import { validateAndGetCorrectedUsernameInTeam } from "@calcom/features/auth/sig
 import { HttpError } from "@calcom/lib/http-error";
 import { prisma } from "@calcom/prisma";
 
+export async function validateAndGetCorrectedUsernameForTeam({
+  username,
+  email,
+  teamId,
+  isSignup,
+}: {
+  username: string;
+  email: string;
+  teamId: number | null;
+  isSignup: boolean;
+}) {
+  if (!teamId) return username;
+
+  const teamUserValidation = await validateAndGetCorrectedUsernameInTeam(username, email, teamId, isSignup);
+  if (!teamUserValidation.isValid) {
+    throw new HttpError({
+      statusCode: 409,
+      message: "Username or email is already taken",
+    });
+  }
+  if (!teamUserValidation.username) {
+    throw new HttpError({
+      statusCode: 422,
+      message: "Invalid username",
+    });
+  }
+  return teamUserValidation.username;
+}
+
 export async function findTokenByToken({ token }: { token: string }) {
   const foundToken = await prisma.verificationToken.findUnique({
     where: {
@@ -33,33 +62,4 @@ export function throwIfTokenExpired(expires?: Date) {
       message: "Token expired",
     });
   }
-}
-
-export async function validateAndGetCorrectedUsernameForTeam({
-  username,
-  email,
-  teamId,
-  isSignup,
-}: {
-  username: string;
-  email: string;
-  teamId: number | null;
-  isSignup: boolean;
-}) {
-  if (!teamId) return username;
-
-  const teamUserValidation = await validateAndGetCorrectedUsernameInTeam(username, email, teamId, isSignup);
-  if (!teamUserValidation.isValid) {
-    throw new HttpError({
-      statusCode: 409,
-      message: "Username or email is already taken",
-    });
-  }
-  if (!teamUserValidation.username) {
-    throw new HttpError({
-      statusCode: 422,
-      message: "Invalid username",
-    });
-  }
-  return teamUserValidation.username;
 }
