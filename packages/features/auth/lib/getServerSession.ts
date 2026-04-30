@@ -36,11 +36,14 @@ const CACHE = new LRUCache<string, Session>({ max: 1000 });
  * token has expired (30 days). This should be fine as we call `/auth/session`
  * frequently enough on the client-side to keep the session alive.
  */
-export async function getServerSession(options: {
+export async function getServerSession({
+  req,
+  authOptions = {},
+}: {
   req: NextApiRequest | GetServerSidePropsContext["req"];
   authOptions?: AuthOptions;
 }) {
-  const { req, authOptions: { secret } = {} } = options;
+  const { secret } = authOptions;
 
   const token = await getToken({
     req,
